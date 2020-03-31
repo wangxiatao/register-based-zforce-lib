@@ -1,6 +1,6 @@
-#include <Arduino.h>
 #include "Streaming.h"
 #include "Zforce.h"
+#include <Arduino.h>
 
 typedef uint8_t sensor_reg_t;
 typedef int32_t sensor_val_t;
@@ -13,11 +13,11 @@ typedef struct SensorReg
 namespace SensorHelper
 {
 const sensor_reg_t reg_R_Status = 0x00;
-const sensor_reg_t reg_RW_Enable = 0x01;
-const sensor_reg_t reg_R_Touch = 0x02;
-const sensor_reg_t reg_RW_Frequency = 0x03;
-const sensor_reg_t reg_RW_Area = 0x04;
 const sensor_reg_t reg_R_Bootcomplete = 0x08;
+const sensor_reg_t reg_RW_Enable = 0x11;
+const sensor_reg_t reg_RW_Frequency = 0x13;
+const sensor_reg_t reg_RW_Area = 0x14;
+const sensor_reg_t reg_R_Touch = 0x22;
 
 #define MAX_REGS 20
 sensor_val_t regs[MAX_REGS];
@@ -36,7 +36,8 @@ bool writeReg(sensor_reg_t addr, sensor_val_t val);
 bool writeReg(SensorReg reg) { return writeReg(reg.addr, reg.val); }
 sensor_val_t readReg(sensor_reg_t addr);
 bool readReg(SensorReg_t &reg);
-}
+void printTouchMessage();
+} // namespace SensorHelper
 
 bool SensorHelper::writeReg(sensor_reg_t addr, sensor_val_t val)
 {
@@ -52,26 +53,28 @@ bool SensorHelper::writeReg(sensor_reg_t addr, sensor_val_t val)
         break;
 
     default:
-        break;
+        return false;
     }
+
+    while (!isDataReady())
+        ;
+    Message *msg = zforce.GetMessage();
+    zforce.DestroyMessage(msg);
+    return true;
 }
 
 sensor_val_t SensorHelper::readReg(sensor_reg_t addr)
 {
-    sensor_val_t val;
+    sensor_val_t val = 0;
 
     switch (addr)
     {
     case reg_R_Status:
-        break;
     case reg_RW_Enable:
-        val = regs[addr];
-        break;
     case reg_R_Touch:
-        break;
     case reg_RW_Frequency:
-        break;
     case reg_RW_Area:
+        val = regs[addr];
         break;
 
     default:
@@ -84,17 +87,25 @@ bool SensorHelper::begin()
 {
     zforce.Start(PIN_NN_DR);
     pinMode(PIN_NN_DR, INPUT_PULLDOWN);
-    attachInterrupt(digitalPinToInterrupt(PIN_NN_DR), dataReadyISR, RISING);
-    Message *msg = zforce.GetMessage();
+    if (isDataReady())
+    {
+        Message *msg = zforce.GetMessage();
+        Serial << (int)msg->type << endl;
+        zforce.DestroyMessage(msg);
+    }
+    return true;
 }
 
 void SensorHelper::config(uint8_t index)
 {
+    detachInterrupt(digitalPinToInterrupt(PIN_NN_DR));
+    writeReg(reg_RW_Enable, true);
+    attachInterrupt(digitalPinToInterrupt(PIN_NN_DR), dataReadyISR, RISING);
 }
 
 uint8_t SensorHelper::updateTouch()
 {
-    if(newTouchDataFlag == false)
+    if (newTouchDataFlag == false)
     {
         return 0;
     }
@@ -120,6 +131,15 @@ uint8_t SensorHelper::updateTouch()
     return -1;
 }
 
+void SensorHelper::printTouchMessage()
+{
+    for (size_t i = 0; i < nTouches; i++)
+    {
+        Serial << "(" << touches[i].id << ")\t[" << touches[i].x << ", " << touches[i].y << "]\t(" << touches[i].event << ")\n";
+    }
+    Serial << endl;
+}
+
 void setup()
 {
     Serial.begin(115200);
@@ -130,7 +150,11 @@ void setup()
     Serial.println("zforce start");
 }
 
-void loop() 
+void loop()
 {
     auto result = SensorHelper::updateTouch();
+    if (result > 0)
+    {
+        SensorHelper::printTouchMessage();
+    }
 }
