@@ -17,12 +17,12 @@ const sensor_reg_t reg_R_Bootcomplete = 0x08;
 const sensor_reg_t reg_RW_Enable = 0x11;
 const sensor_reg_t reg_RW_Frequency = 0x13;
 const sensor_reg_t reg_RW_Area = 0x14;
-const sensor_reg_t reg_R_Touch = 0x22;
+const sensor_reg_t reg_R_Touch = 0x20; // from 0x20 to 0x2F
 
 #define MAX_REGS 20
 sensor_val_t regs[MAX_REGS];
 
-#define TOUCH_BUFFER_SIZE 4
+#define TOUCH_BUFFER_SIZE 4 // must not exeed 4 
 TouchData touches[TOUCH_BUFFER_SIZE];
 uint8_t nTouches = 0;
 
@@ -51,7 +51,6 @@ bool SensorHelper::writeReg(sensor_reg_t addr, sensor_val_t val)
         break;
     case reg_RW_Area:
         break;
-
     default:
         return false;
     }
@@ -71,15 +70,27 @@ sensor_val_t SensorHelper::readReg(sensor_reg_t addr)
     {
     case reg_R_Status:
     case reg_RW_Enable:
-    case reg_R_Touch:
     case reg_RW_Frequency:
     case reg_RW_Area:
         val = regs[addr];
         break;
-
-    default:
-        break;
     }
+
+    if(addr >= reg_R_Touch && addr <= reg_R_Touch + 0x0F)
+    // touch regs range from 0x20 to 0x2F
+    {
+        uint8_t nTp = (addr - reg_R_Touch) / 4;
+        uint8_t nParam = (addr - reg_R_Touch) % 4;
+        if (nParam == 0)
+            val = touches[nTp].x;
+        else if (nParam == 1)
+            val = touches[nTp].y;
+        else if (nParam == 2)
+            val = touches[nTp].id;
+        else
+            val = touches[nTp].event;
+    }
+
     return val;
 }
 
@@ -147,7 +158,7 @@ void setup()
         ;
     SensorHelper::begin();
     SensorHelper::config();
-    Serial.println("zforce start");
+    Serial.println("zforce start\n");
 }
 
 void loop()
@@ -155,6 +166,11 @@ void loop()
     auto result = SensorHelper::updateTouch();
     if (result > 0)
     {
-        SensorHelper::printTouchMessage();
+        // SensorHelper::printTouchMessage();
+        for (size_t i = 0; i < 4; i++)
+        {
+            Serial << SensorHelper::readReg(SensorHelper::reg_R_Touch + i) << "\t";
+        }
+        Serial << "\n\n";
     }
 }
