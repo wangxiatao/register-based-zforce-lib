@@ -19,7 +19,7 @@ const sensor_reg_t reg_RW_Frequency = 0x03;
 const sensor_reg_t reg_RW_Area = 0x06;
 const sensor_reg_t reg_R_Touch = 0x0A; // from 0x0A to 0x1A
 
-#define TOUCH_BUFFER_SIZE 4 // must not exeed 4
+#define TOUCH_BUFFER_SIZE 2 // must not exeed 4
 uint8_t nTouches = 0;
 #define MAX_REGS (reg_R_Touch + TOUCH_BUFFER_SIZE * 4)
 sensor_val_t regs[MAX_REGS];
@@ -106,10 +106,6 @@ void SensorHelper::config(uint8_t index)
 {
     detachInterrupt(digitalPinToInterrupt(PIN_NN_DR));
     writeReg(reg_RW_Enable, true);
-    // writeReg(reg_RW_Area + 3, 100, false);
-    // writeReg(reg_RW_Area + 2, 100, false);
-    // writeReg(reg_RW_Area + 1, 0, false);
-    // writeReg(reg_RW_Area, 0);
     attachInterrupt(digitalPinToInterrupt(PIN_NN_DR), dataReadyISR, RISING);
 }
 
