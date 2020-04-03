@@ -21,4 +21,8 @@ void loop()
             SensorHelper::printRegs();
         }
     }
+    if(Serial.available())
+    {
+        SensorHelper::decode(Serial.readString());
+    }
 }

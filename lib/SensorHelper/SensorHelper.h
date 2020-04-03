@@ -34,4 +34,7 @@ void getTouchdataFromRegs(TouchData &touch, uint8_t index);
 void printTouchMessage();
 void printOneReg(sensor_reg_t addr);
 void printRegs();
+
+SensorReg_t decode(String str);
+String encode(sensor_reg_t *regs, uint8_t length);
 }; // namespace SensorHelper

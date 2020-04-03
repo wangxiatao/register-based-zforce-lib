@@ -149,4 +149,65 @@ void printRegs()
     for (size_t i = 0; i < MAX_REGS; i++)
         printOneReg(i);
 }
+
+SensorReg_t decode(String input)
+{
+    int commaIndexes[4];
+    String params[4];
+    size_t nParams = 4;
+    SensorReg_t reg = {0, 0};
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        if (i == 0)
+        {
+            commaIndexes[i] = input.indexOf(',');
+            params[i] = input.substring(0, commaIndexes[i]);
+            if (commaIndexes[i] == -1)
+            {
+                nParams = -1;
+                break;
+            }
+        }
+        else
+        {
+            commaIndexes[i] = input.indexOf(',', commaIndexes[i - 1] + 1);
+            params[i] = input.substring(commaIndexes[i - 1] + 1, commaIndexes[i]);
+            if (commaIndexes[i] == -1)
+            {
+                nParams = i + 1;
+                break;
+            }
+        }
+    }
+
+    if (nParams < 2)
+    {
+        Serial.println("# of parameters must be more than 1");
+    }
+    else
+    {
+        reg.addr = params[0].toInt();
+        bool readOrWrite = params[1] == "R" ? 0 : 1;
+        if (nParams > 2 && readOrWrite == 1)
+        {
+            reg.val = params[2].toInt();
+            if (reg.addr < MAX_REGS)
+                regs[reg.addr] = reg.val;
+        }
+        else
+        {
+            if(reg.addr < MAX_REGS)
+                reg.val = regs[reg.addr];
+        }
+        Serial << reg.addr << ", " << _HEX(reg.val) << endl;
+    }
+    return reg;
+}
+
+String encode(sensor_reg_t *regs, uint8_t length)
+{
+
+}
+
 }; // namespace SensorHelper
