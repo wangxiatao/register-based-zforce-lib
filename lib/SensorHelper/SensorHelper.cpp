@@ -189,11 +189,11 @@ SensorReg_t decode(String input)
     {
         reg.addr = params[0].toInt();
         bool readOrWrite = params[1] == "R" ? 0 : 1;
-        if (nParams > 2 && readOrWrite == 1)
+        if (nParams > 2 && readOrWrite == 1)    // write register
         {
             reg.val = params[2].toInt();
             if (reg.addr < MAX_REGS)
-                regs[reg.addr] = reg.val;
+                writeReg(reg.addr, reg.val);
         }
         else
         {
