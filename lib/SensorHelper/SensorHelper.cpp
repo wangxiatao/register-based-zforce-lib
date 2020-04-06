@@ -45,6 +45,7 @@ bool sendAndGetFromZforce(sensor_reg_t addr)
     if (msg == NULL)
         return false;
     zforce.DestroyMessage(msg);
+    newTouchDataFlag = false;   // clear flag
     return true;
 }
 
@@ -132,11 +133,10 @@ void printTouchMessage()
     for (size_t i = 0; i < nTouches; i++)
     {
         getTouchdataFromRegs(touch, i);
-        Serial << "(" << i << "/" << nTouches << ")\t["
+        Serial << "(" << millis()/1000.0 << "s)\t(" << i << "/" << nTouches << ")\t["
                << touch.x << ", " << touch.y << "]\t("
                << touch.event << "/" << touch.id << ")\n";
     }
-    Serial << endl;
 }
 
 void printOneReg(sensor_reg_t addr)
@@ -146,8 +146,10 @@ void printOneReg(sensor_reg_t addr)
 
 void printRegs()
 {
+    Serial << "-------------------------" << endl;
     for (size_t i = 0; i < MAX_REGS; i++)
         printOneReg(i);
+    Serial << "-------------------------" << endl;
 }
 
 SensorReg_t decode(String input)
@@ -200,7 +202,7 @@ SensorReg_t decode(String input)
             if(reg.addr < MAX_REGS)
                 reg.val = regs[reg.addr];
         }
-        Serial << reg.addr << ", " << _HEX(reg.val) << endl;
+        Serial << "(" << millis()/1000.0 << "s)\tReg[" << reg.addr << "] = " << _HEX(reg.val) << endl;
     }
     return reg;
 }
